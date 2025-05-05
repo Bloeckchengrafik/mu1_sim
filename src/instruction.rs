@@ -46,7 +46,7 @@ pub enum Instruction {
     Str(Label),
     MovPc,
     MovSp,
-    Defw(u16),
+    Defw(Label),
 }
 
 impl From<u16> for Instruction {
@@ -70,7 +70,7 @@ impl From<u16> for Instruction {
             13 => Instruction::Str(Label::Resolved(arg)),
             14 => Instruction::MovPc,
             15 => Instruction::MovSp,
-            _ => Instruction::Defw(value),
+            _ => Instruction::Defw(Label::Resolved(arg)),
         }
     }
 }
@@ -98,7 +98,14 @@ impl From<String> for Instruction {
             "str" => Instruction::Str(Label::Unresolved(parts[1].to_string())),
             "movpc" => Instruction::MovPc,
             "movsp" => Instruction::MovSp,
-            "defw" => Instruction::Defw(parts[1].parse().unwrap()),
+            "defw" => {
+                let as_u16: Option<u16> = parts[1].parse().ok();
+                if as_u16.is_some() {
+                    Instruction::Defw(Label::Resolved(as_u16.unwrap()))
+                } else {
+                    Instruction::Defw(Label::Unresolved(parts[1].to_string()))
+                }
+            }
             v => panic!("Unknown opcode {}", v),
         }
     }
@@ -123,7 +130,7 @@ impl Instruction {
             Instruction::Str(label) => Instruction::Str(label.resolve(labels)),
             Instruction::MovPc => Instruction::MovPc,
             Instruction::MovSp => Instruction::MovSp,
-            Instruction::Defw(x) => Instruction::Defw(*x),
+            Instruction::Defw(label) => Instruction::Defw(label.resolve(labels)),
         }
     }
 
@@ -145,7 +152,7 @@ impl Instruction {
             Instruction::Str(addr) => addr.get_address(),
             Instruction::MovPc => 0,
             Instruction::MovSp => 0,
-            Instruction::Defw(x) => *x,
+            Instruction::Defw(label) => label.get_address(),
         };
 
         let left_side = match self {

@@ -79,7 +79,7 @@ fn main() -> Result<(), anyhow::Error> {
         pc += 1;
 
         let disasssembled = Instruction::from(instruction);
-        println!("Disassembled: {:?}", disasssembled);
+        println!("{:?} - PC: {}, AC: {}, SP: {}", disasssembled, pc, acc, sp);
         for (k, v) in &monitoring_labels {
             let address = v.get_address();
             println!("{}: {}", k, memory[address as usize]);
