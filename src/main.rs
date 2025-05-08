@@ -5,7 +5,7 @@ use condition::Condition;
 use instruction::{Instruction, Label};
 use std::{collections::HashMap, io::Read};
 
-fn main() -> Result<(), anyhow::Error> {
+fn main() {
     let args: Vec<String> = std::env::args().collect();
     let arg = args.get(1).expect("No argument provided");
 
@@ -161,5 +161,4 @@ fn main() -> Result<(), anyhow::Error> {
         cond.evaluate(&memory);
     }
 
-    Ok(())
 }
