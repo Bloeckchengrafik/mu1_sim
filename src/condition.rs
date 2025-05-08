@@ -36,7 +36,12 @@ impl Condition {
         match self {
             Condition::Equals(label, value) => {
                 let resolved_label = label.resolve(labels);
-                Condition::Equals(resolved_label, *value)
+
+                if let Err(val) = resolved_label {
+                    panic!("Error while processing labels for conditions: {}", val);
+                }
+
+                Condition::Equals(resolved_label.unwrap(), *value)
             }
         }
     }

@@ -7,17 +7,17 @@ pub enum Label {
 }
 
 impl Label {
-    pub fn resolve(&self, labels: &HashMap<&str, u16>) -> Self {
-        match self {
+    pub fn resolve(&self, labels: &HashMap<&str, u16>) -> Result<Self, String> {
+        Ok(match self {
             Label::Unresolved(name) => {
                 if let Some(address) = labels.get(name.clone().to_string().as_str()) {
                     Label::Resolved(*address)
                 } else {
-                    panic!("Label {} not found", name);
+                    return Err(format!("Label {} could not be resolved", name));
                 }
             }
             Label::Resolved(address) => Label::Resolved(*address),
-        }
+        })
     }
 
     pub fn get_address(&self) -> u16 {
@@ -75,13 +75,15 @@ impl From<u16> for Instruction {
     }
 }
 
-impl From<String> for Instruction {
-    fn from(value: String) -> Self {
+impl TryFrom<String> for Instruction {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Instruction, String> {
         let parts: Vec<&str> = value.split_whitespace().collect();
         if parts.len() > 2 {
-            panic!("Invalid instruction format: {}", value);
+            return Err(format!("Invalid instruction format: {}", value));
         }
-        match parts[0].to_lowercase().as_str() {
+        Ok(match parts[0].to_lowercase().as_str() {
             "lda" => Instruction::Lda(Label::Unresolved(parts[1].to_string())),
             "sto" => Instruction::Sto(Label::Unresolved(parts[1].to_string())),
             "add" => Instruction::Add(Label::Unresolved(parts[1].to_string())),
@@ -106,32 +108,32 @@ impl From<String> for Instruction {
                     Instruction::Defw(Label::Unresolved(parts[1].to_string()))
                 }
             }
-            v => panic!("Unknown opcode {}", v),
-        }
+            v => return Err(format!("Unknown Instruction '{}'", v)),
+        })
     }
 }
 
 impl Instruction {
-    pub fn resolve(&self, labels: &HashMap<&str, u16>) -> Self {
-        match self {
-            Instruction::Lda(label) => Instruction::Lda(label.resolve(labels)),
-            Instruction::Sto(label) => Instruction::Sto(label.resolve(labels)),
-            Instruction::Add(label) => Instruction::Add(label.resolve(labels)),
-            Instruction::Sub(label) => Instruction::Sub(label.resolve(labels)),
-            Instruction::Jmp(label) => Instruction::Jmp(label.resolve(labels)),
-            Instruction::Jge(label) => Instruction::Jge(label.resolve(labels)),
-            Instruction::Jne(label) => Instruction::Jne(label.resolve(labels)),
+    pub fn resolve(&self, labels: &HashMap<&str, u16>) -> Result<Self, String> {
+        Ok(match self {
+            Instruction::Lda(label) => Instruction::Lda(label.resolve(labels)?),
+            Instruction::Sto(label) => Instruction::Sto(label.resolve(labels)?),
+            Instruction::Add(label) => Instruction::Add(label.resolve(labels)?),
+            Instruction::Sub(label) => Instruction::Sub(label.resolve(labels)?),
+            Instruction::Jmp(label) => Instruction::Jmp(label.resolve(labels)?),
+            Instruction::Jge(label) => Instruction::Jge(label.resolve(labels)?),
+            Instruction::Jne(label) => Instruction::Jne(label.resolve(labels)?),
             Instruction::Stop => Instruction::Stop,
-            Instruction::Call(label) => Instruction::Call(label.resolve(labels)),
+            Instruction::Call(label) => Instruction::Call(label.resolve(labels)?),
             Instruction::Return => Instruction::Return,
             Instruction::Push => Instruction::Push,
             Instruction::Pop => Instruction::Pop,
-            Instruction::Ldr(label) => Instruction::Ldr(label.resolve(labels)),
-            Instruction::Str(label) => Instruction::Str(label.resolve(labels)),
+            Instruction::Ldr(label) => Instruction::Ldr(label.resolve(labels)?),
+            Instruction::Str(label) => Instruction::Str(label.resolve(labels)?),
             Instruction::MovPc => Instruction::MovPc,
             Instruction::MovSp => Instruction::MovSp,
-            Instruction::Defw(label) => Instruction::Defw(label.resolve(labels)),
-        }
+            Instruction::Defw(label) => Instruction::Defw(label.resolve(labels)?),
+        })
     }
 
     pub fn assemble(&self) -> u16 {
